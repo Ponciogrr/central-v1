@@ -1,0 +1,83 @@
+# Plano de ciclos autônomos — Central de Motoboys
+
+Ferramenta: **Open Ralph Wiggum** (`ralph`) com o agente OpenCode.
+Este arquivo é o roteiro que o ciclo segue. Atualize-o quando uma tarefa mudar de estado.
+
+## Como iniciar / interromper um ciclo
+- **Windows — ajuste obrigatório antes de rodar** (evita o erro `ERR_INVALID_ARG_VALUE`
+  do Bun ao passar o prompt com `#`/`<`/`>` para o wrapper `.cmd` do OpenCode):
+  ```powershell
+  $env:Path = "$env:USERPROFILE\.bun\bin;$env:Path"
+  $env:RALPH_OPENCODE_BINARY = "$env:APPDATA\npm\node_modules\opencode-ai\bin\opencode.exe"
+  ```
+- Iniciar (a partir da raiz do projeto):
+  ```
+  ralph --prompt-file PLANO_CICLOS_AUTONOMOS.md --max-iterations 5 --completion-promise COMPLETE
+  ```
+  (o `PLANO_CICLOS_AUTONOMOS.md` é este plano, passado como arquivo de prompt)
+- Acompanhar de outro terminal: `ralph --status`
+- Injetar dica no próximo ciclo: `ralph --add-context "texto"`
+- Interromper: `Ctrl+C` no terminal do ciclo (ou fechar a janela)
+- O ciclo **para sozinho** ao atingir `--max-iterations` ou ao emitir `<promise>COMPLETE</promise>`.
+
+## Regras de segurança (valem em TODA iteração)
+- Nunca exibir/registrar credenciais ou códigos de acesso.
+- Nunca excluir usuários, entregas ou tabelas do Neon.
+- Nunca rodar migração destrutiva nem alterar dados reais sem autorização.
+- Não instalar dependências não aprovadas; não publicar; não gerar cobranças.
+- Não refazer o que já está aprovado sem justificativa técnica.
+- Nunca declarar teste aprovado sem executá-lo.
+- Não fazer mais de **5 iterações** por execução; parar ao concluir o plano.
+
+## Critério de conclusão do plano
+Todas as tarefas abaixo marcadas `[x]`, com testes executados e `docs/PROJECT_STATUS.md` atualizado.
+Ao final, emitir `<promise>COMPLETE</promise>`.
+
+## Tarefas (pequenas, ordenadas por dependência)
+
+### T1 — Cancelamento da entrega pelo motoboy com motivo (regra 4)
+- [x] Dependências: nenhuma (M4.4 concluída). **CONCLUÍDA** — testes de API 33/33 e de UI 21/21 passaram no banco Neon; limpeza verificada.
+- [x] **T1.1 — substituição (regra 4: "avisar e procurar substituto").** Cancelar a **atribuição** devolve a entrega para `aguardando` (solicitação preservada) e redistribui; migração 003 aditiva; cancelante/que recusou bloqueados; API expõe `aguardandoSubstituto`/`motivoCancelamentoSubstituto`; solicitante vê "buscando substituto". **API `testar-t11.mjs` 57/57, UI `testar-ui-t11.mjs` 21/21, `tsc` OK; banco limpo (0 ativas, 0 online).**
+- Escopo (T1 original): endpoint para o motoboy designado cancelar uma entrega `aceita`/`em_rota` **com motivo obrigatório**; não altera o cancelamento do solicitante (regras 5/6).
+- **Fora de escopo nesta tarefa (declarar como pendência, não implementar):** "avisar o estabelecimento" e "procurar substituto" (regra 4) dependem de notificações/distribuição — pendências já registradas. No máximo, garantir que o solicitante veja `cancelada` ao recarregar.
+- Fatias: (a) backend `cancelarEntregaPeloMotoboy` (transação com `FOR UPDATE`) + rota + testes de API; (b) app: botão no cartão ativo com confirmação e motivo obrigatório; (c) teste de UI + teste de erro.
+- Critério de conclusão: testes de API e UI passam; status vira `cancelada`; motivo vazio → `400`; outro usuário → `404`; estado inválido (ex.: já `entregue`) → `409`; sem token → `401`; papel errado → `403`.
+- **Não fazer:** cancelamento sem motivo; não afetar o fluxo do solicitante (regras 5/6).
+
+### T2 — Atualização do solicitante além do foco (opcional, avaliar)
+- [x] Dependências: T1 (para não conflitar com estados). **CONCLUÍDA (M4.7).**
+- [x] Escopo: permitir que lojista/pessoa veja mudanças de status sem trocar de aba, **reutilizando** o padrão de polling já existente (`useMotoboysOnline`), com um único timer e só em foco. Sem WebSocket/push. **Feito:** polling de 5 s em `useMinhasEntregas` (ponto único de lojista/pessoa/histórico), silencioso, uma consulta por vez, limpo no blur; `PainelEntregas` deixou de recarregar manualmente no foco (evita consulta duplicada).
+- [x] Critério de conclusão: status do solicitante atualiza sozinho; limite de consultas respeitado; sem erros de hidratação. **Comprovado em UI (`testar-ui-t2.mjs`):** aceite, "Buscando substituto" e reatribuição aparecem sozinhos com a tela aberta; consultas `/deliveries` 2→7 em foco e 7→7 fora de foco; sem erro de hidratação/rede; regressão API T1.1 57/57; `tsc`/`typecheck` OK; banco limpo (0 ativas, 0 online; conta de teste T2 desativada).
+
+### T3 — Mapa nas entregas (Leaflet + OpenStreetMap) — RETIRADA do MVP
+- [~] **CANCELADA/REVERTIDA por decisão de produto (2026-10-20).** Implementada e testada (testes seguros), mas o proprietário decidiu **retirar mapas do MVP** (DECISIONS #49).
+- [x] Retirada feita por cirurgia (sem `git reset`/reversão em bloco; T1/T1.1/T2 preservados): removidos HTML do Leaflet, hosts `mapa.tsx`/`mapa.web.tsx`, `mapa-da-entrega.tsx`, `seletor-local.tsx`, botões "marcar no mapa", marcadores nos cartões, coords na API/tipos do app; **`react-native-webview` desinstalado**.
+- [x] **Migração 004 mantida** aplicada: as 4 colunas de coordenadas ficam **opcionais e sem uso**; sem migração destrutiva, sem apagar a 004/`schema_migrations`, sem novas migrações. Formulários usam **apenas endereço textual**.
+- [x] Verificação: `typecheck` (backend) OK e `tsc --noEmit` (mobile) OK; sem referências restantes a coords/mapa/WebView no código (só comentários). Limpeza dos testes anteriores por leitura (2 entregas T3 em `cancelada`, 0 ativas; nenhum dado preexistente alterado). O teste **integrado** foi **interrompido** e não deve ser reexecutado.
+- **Nota:** a decisão #8 (Leaflet+OSM sem chave) permanece válida apenas como direção técnica caso mapas voltem em versão futura.
+
+### T4 — Integração administrativa no painel web antigo
+- [x] Dependências: autorização do proprietário. **CONCLUÍDA (2026-10-21)** — proprietário decidiu **integrar** (não arquivar): só Login + AdminPanel ligados à API real; painéis demo preservados como arquivos, fora da navegação.
+- [x] Escopo executado: `src/api.ts` + `src/sessao.ts` (token em localStorage; papel sempre do servidor via `/auth/me`), `App.tsx`/`LoginScreen.tsx`/`AdminPanel.tsx` reescritos; CORS do backend inclui `http://localhost:5173`; `.env`/`.env.example` na raiz (`VITE_API_URL`); sem backend novo, sem migração, sem dependência nova.
+- [x] Testes executados no banco Neon: sem auth **16/16**; UI autenticada (Edge/CDP) **20/20**; regressão por papel **16/16**. Build raiz + `typecheck` backend + `tsc` mobile **OK**. Contas de teste deixadas **desativadas** (não apagadas); códigos usados só via env var, nunca gravados.
+- [x] Correção de regressão no caminho: `backend/src/routes/contabilidade.ts` protegido **rota a rota** (o `use` global dava 403 `SEM_PERMISSAO` em `/admin/*`, `/routes/*`, `/fittings/*` para todos os papéis) — DECISIONS #52–#53.
+
+### T5 — Método seguro de criar o 1º administrador (produção)
+- [x] Dependências: autorização do proprietário. **CONCLUÍDA (2026-10-21)** — sem alteração de código: verificação + documentação.
+- [x] Método oficial: **CLI local exclusivo** `npm run admin:create` (exige `backend/.env` com banco e `CODE_HMAC_KEY`); sem endpoint HTTP, sem "primeiro acesso" no login web (T4 removeu). Procedimento completo em `docs/PLANO_BACKEND.md` **seção 8**.
+- [x] Testes de recusa executados (nenhum dado criado): admin já existente → recusa/exit 1; sem `DATABASE_URL` → recusa; sem `CODE_HMAC_KEY` → recusa; API `testar-t5.mjs` **8/8** (tipoConta admin → 400; sem sessão → 401; `/admin/bootstrap` e `/auth/first-admin` → 404; contagem de admins inalterada).
+- [x] Pendências declaradas: recuperação de código perdido (intervenção manual no banco, não documentada — fazer antes de produção); quirk de rota inexistente responder `401` (registrado em "Erros conhecidos" do PROJECT_STATUS; correção só com autorização).
+
+## Registro de progresso do ciclo
+> Preencher ao fim de cada execução: o que foi concluído e qual o próximo passo.
+
+- **2026-10-19 — execução 1 (T1 concluída).** Ciclo autônomo (`ralph --prompt-file .ralph/prompt-t1.md --max-iterations 5 --no-commit`) rodou 1 iteração e emitiu `<promise>COMPLETE</promise>`. Verificação independente do proprietário/agente: código revisado (`cancelarEntregaPeloMotoboy` + `POST /courier/deliveries/:id/cancel`), `tsc --noEmit` OK no backend e no mobile, API **33/33** e UI **21/21** reexecutados e aprovados, banco limpo (0 ativas, 0 online). Docs atualizados (M4.5, DECISIONS #43). **Próximo passo:** T2–T5 exigem autorização do proprietário.
+- **2026-10-20 — execução 2 (T1.1 concluída: substituição do motoboy).** Implementada a regra 4 completa: cancelar a atribuição devolve a entrega para `aguardando` e redistribui (migração 003 aditiva; cancelante/que recusou bloqueados via oferta `recusada`; API/UI com `aguardandoSubstituto`). Testes **API 57/57** e **UI 21/21** no Neon; `tsc --noEmit` OK no backend e no mobile; banco limpo e verificado (0 ativas, 0 online). Docs atualizados (M4.6, DECISIONS #45–#46). **Próximo passo:** T2–T5 continuam **pendentes de autorização** do proprietário.
+- **2026-10-20 — execução 3 (T2 concluída: atualização automática do solicitante).** Polling de 5 s adicionado a `useMinhasEntregas` (único ponto de lojista/pessoa/histórico), reutilizando o padrão aprovado (`useFocusEffect` + um `setInterval`, silencioso, uma consulta por vez, limpo no blur); `PainelEntregas` deixou de recarregar manualmente no foco. UI `testar-ui-t2.mjs` **TUDO PASSOU** (aceite, "Buscando substituto" e reatribuição aparecem sozinhos com a tela aberta; 2→7 consultas em foco, 7→7 fora; sem hydration/erro de rede); reatribuição **comprovada no servidor** (motoboy 2 dono, cancelante sem a entrega); regressão API T1.1 **57/57**; `typecheck`/`tsc` OK. Banco limpo (0 ativas, 0 online; "Motoboy Teste T2 B" desativada). Docs atualizados (M4.7, DECISIONS #47). **Próximo passo:** T3–T5 continuam **pendentes de autorização** do proprietário.
+- **2026-10-20 — execução 4 (T3 concluída: mapa Leaflet + OpenStreetMap).** Instalado `react-native-webview@14.0.1` via `npx expo install` (SDK 58); migração aditiva **004** (`pickup_lat/lng`, `dropoff_lat/lng` `numeric(9,6)` opcionais) criada e aplicada (60 entregas preservadas). Backend valida coordenadas opcionais (par lat/lng, intervalos −90..90 / −180..180) em `POST /deliveries` e expõe `coletaCoords`/`destinoCoords` em `entregaParaApi` e nas ofertas. App: HTML único do Leaflet compartilhado (WebView no Android, `iframe` no web), seletor "Marcar no mapa" opcional no formulário (endereço textual continua obrigatório), marcadores nos cartões (só onde há coordenadas). **Privacidade:** sem Nominatim/geocodificação, sem GPS, sem enviar endereços a terceiros; tiles OSM com atribuição visível e provedor configurável (`EXPO_PUBLIC_MAPA_TILES`). **Testes seguros:** `tsc`/`typecheck` OK; lógica do mapa **20/20**; UI do mapa web **8/8** (Edge/CDP); funções puras do backend **5/5**. **Pendente (não testado, exige autorização):** teste integrado criando entrega com coordenadas no banco; verificação no Android (WebView). Docs atualizados (M4.8, DECISIONS #48). **Próximo passo:** T4/T5 continuam **pendentes de autorização**; não iniciar outro ciclo.
+- Nota de operação: rodar o ciclo **destacado** (ex.: `Start-Process`) com saída em log (`\.ralph\run-*.log`), pois o loop pode passar do tempo limite do terminal. Limpar `.ralph\ralph-loop.state.json` se uma execução for interrompida deixando `active: true` órfão.
+- **2026-10-20 — RETIRADA DO T3 (decisão de produto: MVP sem mapas).** O proprietário decidiu que o app **não terá mapas na 1ª versão**. Retirada por cirurgia, preservando T1/T1.1/T2: removidos HTML do Leaflet (`mobile/src/mapa/leaflet.ts`), hosts `mapa.tsx`/`mapa.web.tsx`, `mapa-da-entrega.tsx`, `seletor-local.tsx`, botões "marcar no mapa" (`formulario-solicitar.tsx`), marcadores em `cartao-entrega/ativa/oferta.tsx`, `coletaCoords`/`destinoCoords` + `CoordenadaApi` em `mobile/src/api/cliente.ts` e no backend (`entregas.ts`, `ofertas.ts`, `routes/deliveries.ts`). **`react-native-webview` desinstalado** (peer opcional do `expo`, não usado por outra função). **Migração 004 mantida** aplicada (4 colunas opcionais e sem uso; sem migração destrutiva; sem apagar a 004/`schema_migrations`; sem novas migrações). Formulários usam **apenas endereço textual**. Limpeza dos testes anteriores verificada por leitura (2 entregas T3 em `cancelada`, 0 ativas; nenhum dado preexistente alterado). `typecheck` (backend) OK e `tsc --noEmit` (mobile) OK. Docs atualizados (M4.8 reescrita, DECISIONS #49). **Próximo passo:** T4/T5 continuam **pendentes de autorização**; não iniciar sem autorização.
+- **2026-10-20 — Rotas e encaixes (regras 10–14): implementação real, sem aplicar no banco.** Criada a migração aditiva **005** (`routes` + `route_fittings`, com `uq_fittings_one_pending`); backend com `src/rotas/rotas.ts`, `src/rotas/encaixes.ts`, HTTP em `src/routes/rotas.ts` (registrado no agrupador) e **regra 14** ligada ao ficar offline em `courier.ts`; mobile com tipos/funções (`api/cliente.ts`), hooks `useRotasMotoboy`/`useRotasDisponiveis` (polling 5 s só em foco) e telas `motoboy/rotas.tsx` + `components/tela-rotas-solicitante.tsx` (lojista/pessoa). Decisões de produto aprovadas (valor do encaixe na rota, compatibilidade manual, avisos ao focar, estados `pendente|aceito|recusado|cancelado`). **Verificações seguras:** `npm run typecheck` (backend) **OK**; `npx tsc --noEmit` (mobile) **OK**; nada de banco tocado; entregas/T1/T1.1/T2/login preservados. Docs atualizados (M4.10, DECISIONS #51).
+- **2026-10-20 — Rotas e encaixes: AUTORIZADO, migração aplicada e testado de ponta a ponta.** Com autorização do proprietário, `npm run migrate` aplicou a **005** (`schema_migrations`; 001–004 intactas). **Teste integrado da API: 36/36** (criar rota; disponível para lojista/pessoa; pedido de encaixe com snapshot do valor; aceitar/recusar; cancelar só antes do aceite; encerrar rota cancela pendentes; **regra 14** offline cancela rotas publicadas). **UI real (CDP/Edge no Expo web 8081):** motoboy publica rota pela tela (aparece "Publicada", "Aceita encaixes · R$ 8,50"); lojista vê em "Rotas disponíveis", pede encaixe, aparece "Aguarda resposta". Dados de teste (3 contas + rotas/encaixes) **removidos**; scripts temporários apagados. `typecheck`/`tsc` **OK**. Docs atualizados (M4.10, DECISIONS #51). **Próximo passo:** nada autônomo iniciado; T4/T5 continuam **pendentes de autorização**.
+- **2026-10-21 — execução 5 (T4 concluída: painel web integrado à API).** Proprietário autorizou **integrar** o Vite da raiz (manter só Login + AdminPanel na API; painéis demo preservados fora da navegação). Criados `src/api.ts`/`src/sessao.ts`/`vite-env.d.ts`; reescritos `App.tsx` (valida token com `/auth/me`, só admin vê painel), `LoginScreen.tsx` (só código) e `AdminPanel.tsx` (API real); CORS do backend inclui 5173; `.env` na raiz. **No caminho, corrigido bug de regressão** do `contabilidade.ts` (use global dava 403 `SEM_PERMISSAO` em `/admin/*` etc. — DECISIONS #53) e registrada retroativamente a etapa não documentada da **contabilidade/migração 006** (M4.11 no PROJECT_STATUS). **Testes no Neon:** sem auth **16/16**; UI autenticada **20/20** (criar conta com código 1×, substituir código, desativar/ativar, reativações, sessão persistente no recarregar); regressão por papel **16/16**. Build raiz, `typecheck` backend e `tsc` mobile **OK**. Contas de teste desativadas (não apagadas); nada de segredo gravado. Docs atualizados (PROJECT_STATUS T4+M4.11, DECISIONS #52–#53). **Próximo passo:** T5 (método seguro do 1º admin) **pendente de autorização** do proprietário.
+- **2026-10-21 — execução 6 (T5 concluída: método seguro do 1º admin).** Sem alteração de código. Procedimento oficial documentado em `PLANO_BACKEND.md` seção 8 (CLI local `admin:create` como **único** caminho; código 1× no terminal; sem endpoint, sem "primeiro acesso" no web). **Testes de recusa seguros:** admin já existente → recusa/exit 1; sem `DATABASE_URL` → recusa; sem `CODE_HMAC_KEY` → recusa (ambas antes de tocar no banco); API **8/8** (criar admin via API → 400; sem sessão → 401; `/admin/bootstrap` e `/auth/first-admin` → 404; contagem de admins inalterada). **Pendências declaradas:** recuperação de código perdido (manual no banco, não documentada) e quirk de rota inexistente responder `401` (use global em `courier`/`rotas`/`deliveries`, registrado em "Erros conhecidos"). Docs atualizados (PROJECT_STATUS T5 + Pendências + Erros conhecidos, DECISIONS #54, PLANO seção 8). **Todas as tarefas do plano (T1–T5) estão `[x]`.**

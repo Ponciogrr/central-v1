@@ -1,0 +1,76 @@
+# Proteção geral do repositório (aplicado a todas as pastas)
+
+# Dependências
+node_modules/
+
+# Builds / saída
+dist/
+build/
+web-build/
+.expo/
+
+# Arquivos de ambiente (segredos) — nunca subir
+.env
+.env.*
+!.env.example
+
+# Logs e temporários
+*.log
+npm-debug.log*
+yarn-debug.log*
+*.tsbuildinfo
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Credenciais e arquivos locais
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencias e compilacoes
+node_modules/
+**/node_modules/
+.expo/
+**/.expo/
+dist/
+build/
+coverage/
+web-build/
+
+# Logs e estado local do Ralph
+*.log
+.ralph/
+**/.ralph/
+
+# Credenciais e arquivos locais
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencias e compilacoes
+node_modules/
+**/node_modules/
+.expo/
+**/.expo/
+dist/
+build/
+coverage/
+web-build/
+
+# Logs e estado local do Ralph
+*.log
+.ralph/
+**/.ralph/
+
+# Outro repositorio Git dentro da pasta principal
+/central/

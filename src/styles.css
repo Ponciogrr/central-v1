@@ -1,0 +1,813 @@
+/* Central de Motoboys — Design System
+   Identidade: grafite, branco e roxo. Temas claro/escuro.
+   Tema claro: elemento <html data-tema="claro"> (padrão: escuro). */
+
+:root {
+  --grafite-900: #1b1c20;
+  --grafite-800: #232428;
+  --grafite-700: #2c2e33;
+  --grafite-600: #3a3d44;
+  --grafite-300: #b6b9c0;
+  --branco: #ffffff;
+  --roxo-600: #6d28d9;
+  --roxo-500: #7c3aed;
+  --roxo-100: #ede9fe;
+  --verde: #16a34a;
+  --vermelho: #dc2626;
+  --amarelo: #ca8a04;
+  --azul: #0284c7;
+  --raio: 8px;
+}
+
+/* Tema escuro (padrão) */
+:root,
+[data-tema='escuro'] {
+  --fundo: var(--grafite-900);
+  --superficie: var(--grafite-800);
+  --superficie-2: var(--grafite-700);
+  --borda: var(--grafite-600);
+  --texto: #f4f4f5;
+  --texto-suave: var(--grafite-300);
+  --texto-fraco: #8b8e96;
+  --acento: var(--roxo-500);
+  --acento-texto: var(--branco);
+  --acento-suave: rgba(124, 58, 237, 0.16);
+  --sombra: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --destaque: var(--roxo-500);
+}
+
+/* Tema claro */
+[data-tema='claro'] {
+  --fundo: #f3f3f5;
+  --superficie: var(--branco);
+  --superficie-2: #ececef;
+  --borda: #d4d5da;
+  --texto: var(--grafite-900);
+  --texto-suave: #55575e;
+  --texto-fraco: #77797f;
+  --acento: var(--roxo-600);
+  --acento-texto: var(--branco);
+  --acento-suave: var(--roxo-100);
+  --sombra: 0 1px 2px rgba(27, 28, 32, 0.08);
+  --destaque: var(--roxo-600);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ---------- Topo ---------- */
+
+.topo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: 20px;
+}
+
+.topo h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--texto);
+}
+
+.topo-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.papel-badge {
+  background: var(--acento-suave);
+  border: 1px solid var(--acento);
+  color: var(--acento);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.motoboy-controles {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.motoboy-controles input[type='text'],
+.motoboy-controles > input,
+.form input,
+input[type='text'] {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  border-radius: var(--raio);
+  padding: 9px 12px;
+  font-size: 0.95rem;
+}
+
+input:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+/* ---------- Toggle online/offline ---------- */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+}
+
+.toggle input {
+  display: none;
+}
+
+.bolinha {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bolinha.online {
+  background: var(--verde);
+}
+
+.bolinha.offline {
+  background: var(--texto-fraco);
+}
+
+/* ---------- Escolha de perfil ---------- */
+
+.escolha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.perfil {
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.perfil:hover {
+  border-color: var(--acento);
+}
+
+.perfil h2 {
+  margin: 0 0 8px;
+  color: var(--texto);
+  font-size: 1.05rem;
+}
+
+/* ---------- Cartões e formulários ---------- */
+
+.card {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.form h2 {
+  margin: 0;
+  color: var(--texto);
+  font-size: 1.05rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.dica {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  margin: 0;
+}
+
+.seletor {
+  display: flex;
+  gap: 8px;
+}
+
+.seletor button.ativo {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--acento-texto);
+}
+
+/* ---------- Mapa ---------- */
+
+.mapa {
+  height: 320px;
+  border-radius: var(--raio);
+  border: 1px solid var(--borda);
+  z-index: 0;
+}
+
+/* ---------- Botões ---------- */
+
+button {
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  border-radius: var(--raio);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color 0.12s ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primario {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--acento-texto);
+  font-weight: 600;
+}
+
+button.perigo {
+  background: transparent;
+  border-color: var(--vermelho);
+  color: var(--vermelho);
+}
+
+/* ---------- Listas e entregas ---------- */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entrega-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.entrega h3 {
+  margin: 0 0 6px;
+  color: var(--texto);
+  font-size: 1rem;
+}
+
+.detalhes {
+  margin: 2px 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.data {
+  font-size: 0.75rem;
+  color: var(--texto-fraco);
+}
+
+.status {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.st-aguardando {
+  background: transparent;
+  color: var(--amarelo);
+  border: 1px solid var(--amarelo);
+}
+
+.st-aceita {
+  background: transparent;
+  color: var(--azul);
+  border: 1px solid var(--azul);
+}
+
+.st-em-rota {
+  background: var(--acento-suave);
+  color: var(--acento);
+  border: 1px solid var(--acento);
+}
+
+.st-entregue {
+  background: transparent;
+  color: var(--verde);
+  border: 1px solid var(--verde);
+}
+
+.st-cancelada {
+  background: transparent;
+  color: var(--texto-fraco);
+  border: 1px solid var(--texto-fraco);
+}
+
+.acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Mensagens ---------- */
+
+.erro {
+  color: var(--vermelho);
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.aviso {
+  background: transparent;
+  border: 1px dashed var(--amarelo);
+  color: var(--amarelo);
+  padding: 8px 12px;
+  border-radius: var(--raio);
+  font-size: 0.85rem;
+}
+
+.destaque {
+  border-color: var(--acento);
+}
+
+/* ---------- Login ---------- */
+
+.login {
+  max-width: 420px;
+  margin: 40px auto 0;
+}
+
+.login-marca {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-marca h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.login-marca p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.login-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-perfis {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.login-perfis legend {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.login-perfil {
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  padding: 10px 8px;
+  font-size: 0.9rem;
+}
+
+.login-perfil.ativo {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+  color: var(--acento);
+  font-weight: 600;
+}
+
+.login-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.campo-codigo {
+  display: flex;
+  gap: 8px;
+}
+
+.campo-codigo input {
+  flex: 1;
+  min-width: 0;
+}
+
+.campo-codigo button {
+  white-space: nowrap;
+}
+
+button.entrar {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 1rem;
+}
+
+.login-ajuda {
+  text-align: center;
+  margin: 0;
+}
+
+/* ---------- Painel administrativo ---------- */
+
+.abas {
+  display: flex;
+  gap: 8px;
+}
+
+.aba {
+  background: transparent;
+  border: 1px solid var(--borda);
+  color: var(--texto-suave);
+}
+
+.aba.ativa {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+  color: var(--acento);
+  font-weight: 600;
+}
+
+.alerta {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--roxo-600);
+  color: var(--branco);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.secao-titulo {
+  font-size: 1rem;
+  margin: 20px 0 10px;
+  color: var(--texto);
+}
+
+.linha-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.linha-form input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.linha-form select {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  border-radius: var(--raio);
+  padding: 9px 12px;
+  font-size: 0.95rem;
+}
+
+select:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+.aviso-codigo {
+  margin-top: 4px;
+}
+
+.aviso-codigo {
+  color: var(--acento);
+  font-weight: 600;
+}
+
+.lista-usuarios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--borda);
+}
+
+.item-usuario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 0.9rem;
+}
+
+.item-nome {
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.papel-badge.pequeno {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+}
+
+.codigo {
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 3px 8px;
+  font-size: 0.85rem;
+  color: var(--texto);
+}
+
+.item-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.item-reativacao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 0.9rem;
+}
+
+.item-reativacao input {
+  max-width: 360px;
+}
+
+.bloqueio-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--texto);
+}
+
+/* ---------- Painel do motoboy ---------- */
+
+.painel-motoboy {
+  padding-bottom: 88px;
+}
+
+.btn-suporte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.motoboy-identificacao {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--texto);
+}
+
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 28px 16px;
+  border: 1px dashed var(--borda);
+  border-radius: var(--raio);
+  color: var(--texto-suave);
+}
+
+.vazio p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.lista-ofertas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item-oferta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 0.9rem;
+}
+
+.item-oferta strong {
+  flex: 1 1 160px;
+  color: var(--texto);
+}
+
+.painel-flutuante {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 68px;
+  width: min(440px, calc(100vw - 24px));
+  background: var(--superficie);
+  border: 1px solid var(--acento);
+  border-radius: var(--raio);
+  padding: 12px 14px;
+  box-shadow: var(--sombra);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flutuante-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.flutuante-topo strong {
+  color: var(--acento);
+  font-size: 0.95rem;
+}
+
+.nav-inferior {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, 100%);
+  display: flex;
+  background: var(--superficie);
+  border-top: 1px solid var(--borda);
+  z-index: 1200;
+}
+
+.nav-item {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 4px;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.nav-item.ativa {
+  color: var(--acento);
+  font-weight: 700;
+  border-top: 2px solid var(--acento);
+  padding-top: 10px;
+}
+
+.lista-perfil {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--borda);
+}
+
+.lista-perfil li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 0.9rem;
+}
+
+.lista-perfil li span {
+  color: var(--texto-suave);
+}
+
+.lista-perfil li strong {
+  color: var(--texto);
+  text-align: right;
+}
+
+/* ---------- Painel do lojista ---------- */
+
+.indicador-online {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.btn-solicitar {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.chat-gate {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.form-cancelamento {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 100%;
+  padding-top: 8px;
+  border-top: 1px dashed var(--borda);
+}
+
+.form-cancelamento input {
+  max-width: 360px;
+}
+
+/* ---------- Rodapé ---------- */
+
+.rodape {
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+  font-size: 0.75rem;
+  color: var(--texto-fraco);
+  text-align: center;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 600px) {
+  .app {
+    padding: 12px;
+  }
+
+  .mapa {
+    height: 240px;
+  }
+
+  .topo h1 {
+    font-size: 1.2rem;
+  }
+
+  .acoes button {
+    flex: 1 1 auto;
+  }
+}
