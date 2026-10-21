@@ -420,3 +420,13 @@
 - Protótipo web preservado e funcionando: `npm run dev` → http://localhost:5173.
 - **Como testar o fluxo do protótipo:** (1) admin cria 1 Lojista, 1 Pessoa Física e 1 Motoboy; (2) lojista/pessoa solicita entrega (coleta, entrega, valor, revisão, confirmação); (3) motoboy **online** vê a oferta atribuída (30s → próximo elegível; recusou → não recebe de novo); (4) aceitar → solicitante vê "Aceita"; (5) Iniciar rota → Finalizar → histórico dos dois; (6) cancelar antes (sem motivo) e depois (exige motivo); (7) F5 preserva os dados.
 - Verificação do protótipo: `npm run build` (tsc + Vite).
+
+## Publicação no GitHub (2026-10-21)
+- **Repositório oficial:** `https://github.com/Ponciogrr/central-v1` (branch `main`, **público**).
+- **O que estava errado no push anterior (duas causas independentes):**
+  1. **Remote apontava para um repositório inexistente** — `https://github.com/Ponciogrr/Central-delivery.git` (404 na API do GitHub). O repositório que existe na conta `Ponciogrr` é **`central-v1`**. Remote corrigido.
+  2. **Credencial do GitHub não estava sendo usada** — o repositório local tinha `credential.helperselector.selected=<no helper>`, ou seja, nenhum helper de credencial ativo; o Git abria o prompt de usuário/ senha e o push morria com `Repository not found` / `could not read Username`. Configurado `credential.helper=manager` (Git Credential Manager) e o token válido já guardado no Windows foi registrado nele.
+- **Higiene verificada antes de subir:** nenhum `.env` versionado (só `.env.example`), nenhum segredo no código (varredura de padrão de token/URL de banco: 0 ocorrências reais), nenhum arquivo acima de 2 MB (maior = mockup PNG de 1,65 MB), `node_modules/`, `dist/`, `.expo/`, `.ralph/` e `central/` fora do versionamento.
+- **Verificações executadas antes do push:** `npm run build` (raiz, tsc + Vite) **OK**; `npm run typecheck` (backend) **OK**; `npx tsc --noEmit` (mobile) **OK**.
+- **Resultado:** commit `2352635` ("first commit") publicado na `main`; árvore remota conferida pela API = **353 entradas**; `git status` limpo e `main` acompanhando `origin/main`.
+- **Lembrete para futuros pushes:** `git push` precisa de credencial ativa. Se der `could not read Username`, refazer o login com `git credential-manager github login --browser`. O token é pessoal — nunca versionar.
