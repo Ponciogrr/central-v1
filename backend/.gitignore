@@ -25,4 +25,3 @@ Thumbs.db
 
 # Bundle gerado do build da Vercel (nao versionar)
 /api/index.js
-/api/handler.js
