@@ -13,7 +13,7 @@
     "migrate": "node --env-file-if-exists=.env src/db/migrate.ts",
     "admin:create": "node --env-file-if-exists=.env src/scripts/criar-admin.ts",
     "test": "node --env-file-if-exists=.env --test \"tests/*.test.mjs\"",
-    "build": "esbuild api/_entrada.ts --bundle --platform=node --target=node24 --format=esm --packages=external --outfile=api/index.js",
+    "build": "esbuild src/_entrada.ts --bundle --platform=node --target=node24 --format=esm --packages=external --outfile=api/index.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
