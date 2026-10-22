@@ -24,4 +24,3 @@ Thumbs.db
 !.env.example
 
 # Bundle gerado do build da Vercel (nao versionar)
-/api/index.js
