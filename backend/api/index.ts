@@ -1,6 +1,10 @@
 ﻿// Entrada da API na Vercel (função serverless).
-// Reexporta a mesma aplicação Express usada localmente em `npm run dev`,
-// para que o backend funcione igual na nuvem (sem código duplicado).
-import { criarApp } from '../src/app.ts'
+//
+// A aplicação Express é montada a partir do bundle gerado no build
+// (`npm run build` -> `dist/api.js`), porque o runtime da Vercel não reescreve
+// os especificadores de import com extensão `.ts` (ver DECISIONS #64).
+// O bundle é autocontido: não importa nenhum arquivo local.
+// @ts-ignore - o bundle só existe depois do build (dist/api.js)
+import app from '../dist/api.js'
 
-export default criarApp()
+export default app
