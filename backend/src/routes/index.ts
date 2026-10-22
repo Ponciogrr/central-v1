@@ -6,6 +6,7 @@ import { rotasMotoboy } from './courier.ts'
 import { rotasEntregas } from './deliveries.ts'
 import { rotasSaude } from './health.ts'
 import { rotasRotas } from './rotas.ts'
+import { rotasRotasDia } from './rotas-dia.ts'
 
 // Agrupador de rotas da API.
 export const rotas = Router()
@@ -16,4 +17,5 @@ rotas.use(rotasEntregas)
 rotas.use(rotasMotoboy)
 rotas.use(rotasContabilidade)
 rotas.use(rotasRotas)
+rotas.use(rotasRotasDia)
 rotas.use(rotasAdmin)

@@ -5,6 +5,13 @@ import { buscarUsuarioPorCodigoHash, type UsuarioBanco } from '../auth/usuarios.
 import { env } from '../config/env.ts'
 import { exigirAutenticacao } from '../middleware/autenticacao.ts'
 import { limitarLogin, registrarSucessoLogin } from '../middleware/limite.ts'
+import {
+  MENSAGEM_MANUTENCAO,
+  limparTentativa,
+  manutencaoAtiva,
+  origemBloqueada,
+  registrarTentativa,
+} from '../rotas/admin-operacao.ts'
 import type { UsuarioPublico } from '../types/usuario.ts'
 
 export const rotasAuth = Router()
@@ -27,6 +34,18 @@ function extrairCodigo(corpo: unknown): string | null {
   return limpo.length > 0 ? limpo : null
 }
 
+// Origem do acesso (IP real). É o que identifica a origem das tentativas.
+function origem(req: { ip?: string; socket: { remoteAddress?: string } }): string {
+  return req.ip ?? req.socket.remoteAddress ?? 'desconhecida'
+}
+
+// GET /status — informação pública e honesta para o app (modo de manutenção).
+// Não revela nada além do estado da manutenção.
+rotasAuth.get('/status', async (_req, res) => {
+  const ativa = await manutencaoAtiva()
+  res.json({ manutencao: ativa, mensagem: ativa ? MENSAGEM_MANUTENCAO : null })
+})
+
 rotasAuth.post('/auth/login', limitarLogin, async (req, res) => {
   if (!env.authConfigurada) {
     res
@@ -45,8 +64,42 @@ rotasAuth.post('/auth/login', limitarLogin, async (req, res) => {
     return
   }
 
+  const de = origem(req)
+
   const usuario = await buscarUsuarioPorCodigoHash(identificadorDoCodigo(codigo))
+  const ehAdmin = usuario?.account_type === 'admin'
+
+  // Regra 31: origem bloqueada por tentativas erradas — só o administrador
+  // libera (a mensagem orienta o usuário a procurar o administrador).
+  // O administrador NUNCA fica trancado fora: sem isso ninguém conseguiria
+  // liberar o acesso bloqueado.
+  if (!ehAdmin && (await origemBloqueada(de))) {
+    res.status(403).json({
+      erro: 'Acesso bloqueado por excesso de tentativas erradas. Procure o administrador da Central de Motoboys para liberar sua conta.',
+      codigo: 'ACESSO_BLOQUEADO',
+    })
+    return
+  }
+
+  // Regras 71–81: durante a manutenção o acesso dos usuários fica bloqueado
+  // e a mensagem exibida é EXATAMENTE a da regra 81. O administrador mantém
+  // o acesso (regra 78).
+  if (await manutencaoAtiva()) {
+    if (!ehAdmin) {
+      res.status(503).json({ erro: MENSAGEM_MANUTENCAO, codigo: 'MANUTENCAO' })
+      return
+    }
+  }
+
   if (!usuario) {
+    const registro = await registrarTentativa({ userId: null, nomeUsuario: null, origem: de })
+    if (registro.bloqueado) {
+      res.status(403).json({
+        erro: 'Acesso bloqueado por excesso de tentativas erradas. Procure o administrador da Central de Motoboys para liberar sua conta.',
+        codigo: 'ACESSO_BLOQUEADO',
+      })
+      return
+    }
     res.status(401).json({ erro: 'Código de acesso inválido.', codigo: 'CREDENCIAL_INVALIDA' })
     return
   }
@@ -60,6 +113,8 @@ rotasAuth.post('/auth/login', limitarLogin, async (req, res) => {
 
   const token = await assinarToken({ sub: usuario.id, papel: usuario.account_type })
   registrarSucessoLogin(req)
+  // Login bem-sucedido zera a contagem de tentativas daquela origem.
+  await limparTentativa(de, usuario.id)
   res.json({
     token,
     tipo: 'Bearer',
