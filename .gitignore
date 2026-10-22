@@ -80,3 +80,10 @@ web-build/
 **/.vercel/
 .vercel
 
+
+# Duplicatas das skills geradas pelo instalador (o canonico e .agents/skills/)
+.claude/
+agent/
+**/.claude/
+**/agent/
+mobile/.agents/
