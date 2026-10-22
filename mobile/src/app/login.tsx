@@ -1,5 +1,5 @@
 import { Stack, router, type Href } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ErroApi } from '@/api/cliente'
+import { ErroApi, buscarStatusServico } from '@/api/cliente'
 import Botao from '@/components/botao'
 import Campo from '@/components/campo'
 import OnzeOndas from '@/components/ondas'
@@ -19,7 +19,7 @@ import { useTela } from '@/tela'
 import { useTema } from '@/theme'
 
 const AREA_POR_PAPEL: Record<string, Href> = {
-  admin: '/admin/usuarios',
+  admin: '/admin',
   motoboy: '/motoboy',
   lojista: '/lojista',
   pessoa_fisica: '/pessoa',
@@ -33,6 +33,24 @@ export default function Login() {
   const [visivel, setVisivel] = useState(false)
   const [erro, setErro] = useState('')
   const [processando, setProcessando] = useState(false)
+  const [manutencao, setManutencao] = useState<string | null>(null)
+
+  // Aviso de manutenção (regra 81): quem não for administrador é avisado antes
+  // de tentar entrar. O administrador consegue entrar normalmente.
+  useEffect(() => {
+    let ativo = true
+    void buscarStatusServico()
+      .then(resposta => {
+        if (!ativo) return
+        setManutencao(resposta.manutencao ? resposta.mensagem ?? '' : null)
+      })
+      .catch(() => {
+        // Sem status do servidor: segue o fluxo normal de login.
+      })
+    return () => {
+      ativo = false
+    }
+  }, [])
 
   async function aoEntrar() {
     if (processando) return
@@ -97,6 +115,14 @@ export default function Login() {
                 Use o seu código de acesso. Não há cadastro público — quem cria o seu código é o
                 administrador.
               </Text>
+
+              {manutencao ? (
+                <View style={[styles.manutencao, { borderColor: cores.acao }]}>
+                  <Text style={[styles.manutencaoTexto, { color: cores.texto }]}>
+                    {manutencao}
+                  </Text>
+                </View>
+              ) : null}
 
               <Campo
                 rotulo="Código de acesso"
@@ -211,6 +237,16 @@ const styles = StyleSheet.create({
   },
   erro: {
     fontSize: 14,
+  },
+  manutencao: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  manutencaoTexto: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '700',
   },
   orientacaoTexto: {
     fontSize: 12,

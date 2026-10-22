@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Platform, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import {
   CATEGORIAS_DESPESA,
   mensagemDeErro,
@@ -9,6 +9,7 @@ import {
 } from '@/api/cliente'
 import Botao from '@/components/botao'
 import Campo from '@/components/campo'
+import { confirmar as confirmarAcao } from '@/components/confirmar'
 import { paraDataIso } from '@/contabilidade'
 import { NUMEROS, useTema } from '@/theme'
 import { lerValor } from '@/valor'
@@ -31,18 +32,7 @@ function formatarData(iso: string): string {
 
 // Confirmação compatível com web e nativo.
 function confirmar(titulo: string, mensagem: string): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    const ok = typeof window !== 'undefined' ? window.confirm(`${titulo}\n\n${mensagem}`) : false
-    return Promise.resolve(ok)
-  }
-  return new Promise(resolve => {
-    // Alert é importado dinamicamente para não pesar na web do dev.
-    const { Alert } = require('react-native') as typeof import('react-native')
-    Alert.alert(titulo, mensagem, [
-      { text: 'Voltar', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Excluir', style: 'destructive', onPress: () => resolve(true) },
-    ])
-  })
+  return confirmarAcao(titulo, mensagem, { rotuloConfirmar: 'Excluir', perigo: true })
 }
 
 interface Props {

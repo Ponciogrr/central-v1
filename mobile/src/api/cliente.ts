@@ -643,6 +643,9 @@ export interface UsuarioAdminApi {
   papel: Papel
   telefone: string | null
   ativo: boolean
+  // Sufixo de 4 caracteres do código de acesso (o código inteiro nunca sai do
+  // servidor). Ajuda o administrador a identificar a conta.
+  codigo?: string | null
   criadoEm: string
 }
 
@@ -661,21 +664,6 @@ export interface SolicitacaoReativacaoApi {
 }
 
 export type TipoContaCriavel = 'motoboy' | 'lojista' | 'pessoa_fisica'
-
-// GET /admin/users — lista usuários (o servidor nunca devolve o hash do código).
-export async function listarUsuariosAdmin(
-  token: string,
-  opcoes?: { limite?: number; deslocamento?: number },
-): Promise<{ usuarios: UsuarioAdminApi[]; total: number }> {
-  const params = new URLSearchParams()
-  if (opcoes?.limite) params.set('limite', String(opcoes.limite))
-  if (opcoes?.deslocamento) params.set('deslocamento', String(opcoes.deslocamento))
-  const consulta = params.toString()
-  const corpo = (await requisitar(`/admin/users${consulta ? `?${consulta}` : ''}`, {
-    headers: cabecalhoAutorizacao(token),
-  })) as { usuarios?: UsuarioAdminApi[]; total?: number }
-  return { usuarios: corpo.usuarios ?? [], total: corpo.total ?? 0 }
-}
 
 // POST /admin/users — cria usuário (motoboy/lojista/pessoa_fisica); o código
 // aparece UMA vez na resposta e nunca é guardado pelo aplicativo.
@@ -744,5 +732,385 @@ export async function recusarReativacaoAdmin(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
     body: JSON.stringify({ motivo: motivo ?? '' }),
+  })
+}
+
+// GET /admin/users — busca e filtros (busca por nome/telefone, papel, ativo).
+export interface FiltrosUsuarios {
+  busca?: string
+  papel?: Papel | ''
+  ativo?: boolean | null
+  limite?: number
+  deslocamento?: number
+}
+
+export async function listarUsuariosAdmin(
+  token: string,
+  opcoes?: FiltrosUsuarios,
+): Promise<{ usuarios: UsuarioAdminApi[]; total: number }> {
+  const params = new URLSearchParams()
+  if (opcoes?.busca) params.set('busca', opcoes.busca)
+  if (opcoes?.papel) params.set('papel', opcoes.papel)
+  if (opcoes?.ativo !== undefined && opcoes.ativo !== null) {
+    params.set('ativo', String(opcoes.ativo))
+  }
+  if (opcoes?.limite) params.set('limite', String(opcoes.limite))
+  if (opcoes?.deslocamento) params.set('deslocamento', String(opcoes.deslocamento))
+  const consulta = params.toString()
+  const corpo = (await requisitar(`/admin/users${consulta ? `?${consulta}` : ''}`, {
+    headers: cabecalhoAutorizacao(token),
+  })) as { usuarios?: UsuarioAdminApi[]; total?: number }
+  return { usuarios: corpo.usuarios ?? [], total: corpo.total ?? 0 }
+}
+
+// ---------------------------------------------------------------------------
+// Status do serviço (público) — usado na tela de entrada e no login.
+// ---------------------------------------------------------------------------
+
+export interface StatusServicoApi {
+  manutencao: boolean
+  mensagem: string | null
+}
+
+// GET /status — SEM token. Diz se o sistema está em manutenção.
+export async function buscarStatusServico(): Promise<StatusServicoApi> {
+  const corpo = (await requisitar('/status')) as {
+    manutencao?: boolean
+    mensagem?: string | null
+  }
+  return { manutencao: Boolean(corpo.manutencao), mensagem: corpo.mensagem ?? null }
+}
+
+// ---------------------------------------------------------------------------
+// Rotas do Dia
+// ---------------------------------------------------------------------------
+
+export type StatusRotaDia =
+  | 'rascunho'
+  | 'publicada'
+  | 'contratada'
+  | 'em_andamento'
+  | 'concluida'
+  | 'cancelada'
+
+export interface RotaDiaApi {
+  id: string
+  titulo: string
+  origem: string
+  destino: string
+  data: string
+  saida: string | null
+  paradas: string | null
+  descricao: string | null
+  valor: string | null
+  valorCombinado: string | null
+  contraproposta: string | null
+  status: StatusRotaDia
+  motivoCancelamento: string | null
+  criadoEm: string
+  publicadoEm: string | null
+  contratadoEm: string | null
+  iniciadoEm: string | null
+  concluidoEm: string | null
+  encerradoEm: string | null
+  publicador: string | null
+  telefonePublicador: string | null
+}
+
+export interface DadosRotaDia {
+  titulo: string
+  origem: string
+  destino: string
+  data: string
+  saida?: string
+  paradas?: string
+  descricao?: string
+  valor?: string | number | null
+  publicar?: boolean
+}
+
+function rotaDiaDoCorpo(corpo: unknown): RotaDiaApi {
+  const rota = (corpo as { rota?: RotaDiaApi } | null)?.rota
+  if (!rota) {
+    throw new ErroApi('Resposta inesperada do servidor.', 'RESPOSTA_INVALIDA', null)
+  }
+  return rota
+}
+
+// GET /daily-routes/published — rotas publicadas por mim (solicitante).
+export async function listarMinhasRotasDia(token: string): Promise<RotaDiaApi[]> {
+  const corpo = (await requisitar('/daily-routes/published', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { rotas?: RotaDiaApi[] }
+  return corpo.rotas ?? []
+}
+
+// GET /daily-routes/available — rotas abertas para o motoboy.
+export async function listarRotasDiaDisponiveis(token: string): Promise<RotaDiaApi[]> {
+  const corpo = (await requisitar('/daily-routes/available', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { rotas?: RotaDiaApi[] }
+  return corpo.rotas ?? []
+}
+
+// GET /daily-routes/mine — rotas que o motoboy contratou.
+export async function listarMinhasRotasDiaContratadas(token: string): Promise<RotaDiaApi[]> {
+  const corpo = (await requisitar('/daily-routes/mine', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { rotas?: RotaDiaApi[] }
+  return corpo.rotas ?? []
+}
+
+// POST /daily-routes — cria (e, por padrão, publica) uma rota do dia.
+export async function criarRotaDia(token: string, dados: DadosRotaDia): Promise<RotaDiaApi> {
+  const corpo = await requisitar('/daily-routes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
+    body: JSON.stringify(dados),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// POST /daily-routes/:id/publish — publica um rascunho.
+export async function publicarRotaDia(token: string, id: string): Promise<RotaDiaApi> {
+  const corpo = await requisitar(`/daily-routes/${id}/publish`, {
+    method: 'POST',
+    headers: cabecalhoAutorizacao(token),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// POST /daily-routes/:id/cancel — cancela (motivo obrigatório).
+export async function cancelarRotaDia(
+  token: string,
+  id: string,
+  motivo: string,
+): Promise<RotaDiaApi> {
+  const corpo = await requisitar(`/daily-routes/${id}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
+    body: JSON.stringify({ motivo }),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// POST /daily-routes/:id/accept — aceita; `valorProposto` é a contraproposta.
+export async function aceitarRotaDia(
+  token: string,
+  id: string,
+  valorProposto?: string | number | null,
+): Promise<RotaDiaApi> {
+  const corpo = await requisitar(`/daily-routes/${id}/accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
+    body: JSON.stringify({ valorProposto: valorProposto ?? null }),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// POST /daily-routes/:id/start — inicia o serviço.
+export async function iniciarRotaDia(token: string, id: string): Promise<RotaDiaApi> {
+  const corpo = await requisitar(`/daily-routes/${id}/start`, {
+    method: 'POST',
+    headers: cabecalhoAutorizacao(token),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// POST /daily-routes/:id/complete — conclui (valor final opcional).
+export async function concluirRotaDia(
+  token: string,
+  id: string,
+  valorFinal?: string | number | null,
+): Promise<RotaDiaApi> {
+  const corpo = await requisitar(`/daily-routes/${id}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
+    body: JSON.stringify({ valorFinal: valorFinal ?? null }),
+  })
+  return rotaDiaDoCorpo(corpo)
+}
+
+// ---------------------------------------------------------------------------
+// Painel administrativo — visão geral, auditoria, operação
+// ---------------------------------------------------------------------------
+
+export interface ContadoresAdminApi {
+  usuarios: {
+    total: number
+    motoboys: number
+    lojistas: number
+    pessoas: number
+    admins: number
+    ativos: number
+    inativos: number
+  }
+  motoboysOnline: number
+  entregas: {
+    total: number
+    aguardando: number
+    ativas: number
+    entregues: number
+    canceladas: number
+    hoje: number
+  }
+  rotasDoDia: {
+    total: number
+    publicadas: number
+    contratadas: number
+    emAndamento: number
+    concluidas: number
+    canceladas: number
+  }
+  encaixes: {
+    pendentes: number
+    emNegociacao: number
+    aceitos: number
+    recusados: number
+  }
+  reativacoesPendentes: number
+  tentativasBloqueadas: number
+}
+
+export interface AcaoAuditoriaApi {
+  id: string
+  atorNome: string | null
+  acao: string
+  entidade: string
+  entidadeId: string | null
+  detalhes: Record<string, unknown> | null
+  criadoEm: string
+}
+
+export interface VisaoGeralAdminApi {
+  contadores: ContadoresAdminApi
+  manutencao: boolean
+  mensagemManutencao: string
+  ultimasAcoes: AcaoAuditoriaApi[]
+}
+
+// GET /admin/overview — números do painel + últimas ações.
+export async function buscarVisaoGeralAdmin(token: string): Promise<VisaoGeralAdminApi> {
+  const corpo = (await requisitar('/admin/overview', {
+    headers: cabecalhoAutorizacao(token),
+  })) as Partial<VisaoGeralAdminApi>
+  return {
+    contadores: (corpo.contadores ?? {}) as ContadoresAdminApi,
+    manutencao: Boolean(corpo.manutencao),
+    mensagemManutencao: corpo.mensagemManutencao ?? '',
+    ultimasAcoes: corpo.ultimasAcoes ?? [],
+  }
+}
+
+// GET /admin/audit — histórico das ações administrativas.
+export async function listarAuditoriaAdmin(
+  token: string,
+  opcoes?: { limite?: number; deslocamento?: number },
+): Promise<{ acoes: AcaoAuditoriaApi[]; total: number }> {
+  const params = new URLSearchParams()
+  if (opcoes?.limite) params.set('limite', String(opcoes.limite))
+  if (opcoes?.deslocamento) params.set('deslocamento', String(opcoes.deslocamento))
+  const consulta = params.toString()
+  const corpo = (await requisitar(`/admin/audit${consulta ? `?${consulta}` : ''}`, {
+    headers: cabecalhoAutorizacao(token),
+  })) as { acoes?: AcaoAuditoriaApi[]; total?: number }
+  return { acoes: corpo.acoes ?? [], total: corpo.total ?? 0 }
+}
+
+export interface MotoboyOnlineApi {
+  id: string
+  nome: string | null
+  telefone: string | null
+  codigo: string | null
+  online: boolean
+  ultimoAcesso: string | null
+}
+
+// GET /admin/couriers/online — motoboys online (regras 43-45).
+export async function listarMotoboysOnlineAdmin(
+  token: string,
+): Promise<MotoboyOnlineApi[]> {
+  const corpo = (await requisitar('/admin/couriers/online', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { motoboys?: MotoboyOnlineApi[] }
+  return corpo.motoboys ?? []
+}
+
+export interface FiltrosRotasDiaAdmin {
+  status?: string
+  data?: string
+  publicador?: string
+  motoboy?: string
+  limite?: number
+  deslocamento?: number
+}
+
+// GET /admin/daily-routes — Rotas do Dia com filtros.
+export async function listarRotasDiaAdmin(
+  token: string,
+  opcoes?: FiltrosRotasDiaAdmin,
+): Promise<{ rotas: RotaDiaApi[]; total: number }> {
+  const params = new URLSearchParams()
+  if (opcoes?.status) params.set('status', opcoes.status)
+  if (opcoes?.data) params.set('data', opcoes.data)
+  if (opcoes?.publicador) params.set('publicador', opcoes.publicador)
+  if (opcoes?.motoboy) params.set('motoboy', opcoes.motoboy)
+  if (opcoes?.limite) params.set('limite', String(opcoes.limite))
+  if (opcoes?.deslocamento) params.set('deslocamento', String(opcoes.deslocamento))
+  const consulta = params.toString()
+  const corpo = (await requisitar(`/admin/daily-routes${consulta ? `?${consulta}` : ''}`, {
+    headers: cabecalhoAutorizacao(token),
+  })) as { rotas?: RotaDiaApi[]; total?: number }
+  return { rotas: corpo.rotas ?? [], total: corpo.total ?? 0 }
+}
+
+// GET /admin/settings/maintenance — estado do modo de manutenção.
+export async function buscarManutencaoAdmin(
+  token: string,
+): Promise<{ ativa: boolean; mensagem: string }> {
+  const corpo = (await requisitar('/admin/settings/maintenance', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { ativa?: boolean; mensagem?: string }
+  return { ativa: Boolean(corpo.ativa), mensagem: corpo.mensagem ?? '' }
+}
+
+// POST /admin/settings/maintenance — liga/desliga a manutenção (regra 81).
+export async function definirManutencaoAdmin(
+  token: string,
+  ativa: boolean,
+): Promise<{ ativa: boolean; mensagem: string }> {
+  const corpo = (await requisitar('/admin/settings/maintenance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...cabecalhoAutorizacao(token) },
+    body: JSON.stringify({ ativa }),
+  })) as { ativa?: boolean; mensagem?: string }
+  return { ativa: Boolean(corpo.ativa), mensagem: corpo.mensagem ?? '' }
+}
+
+export interface TentativaLoginApi {
+  id: string
+  userId: string | null
+  nomeUsuario: string | null
+  origem: string
+  tentativas: number
+  bloqueado: boolean
+  criadoEm: string
+  atualizadoEm: string
+  liberadoEm: string | null
+}
+
+// GET /admin/login-attempts — lista completa, ordem cronológica, sem filtros.
+export async function listarTentativasLoginAdmin(token: string): Promise<TentativaLoginApi[]> {
+  const corpo = (await requisitar('/admin/login-attempts', {
+    headers: cabecalhoAutorizacao(token),
+  })) as { tentativas?: TentativaLoginApi[] }
+  return corpo.tentativas ?? []
+}
+
+// POST /admin/login-attempts/:id/release — libera o acesso bloqueado.
+export async function liberarTentativaLoginAdmin(token: string, id: string): Promise<void> {
+  await requisitar(`/admin/login-attempts/${id}/release`, {
+    method: 'POST',
+    headers: cabecalhoAutorizacao(token),
   })
 }

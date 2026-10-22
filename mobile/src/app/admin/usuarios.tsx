@@ -15,6 +15,7 @@ import {
 } from '@/api/cliente'
 import Botao from '@/components/botao'
 import Campo from '@/components/campo'
+import Segmentado, { type Segmento } from '@/components/segmentado'
 import { useSessao } from '@/sessao'
 import { useTema } from '@/theme'
 
@@ -24,6 +25,19 @@ const ROTULO_PAPEL: Record<Papel, string> = {
   lojista: 'Lojista',
   pessoa_fisica: 'Pessoa física',
 }
+
+const FILTROS_PAPEL: Segmento<Papel | ''>[] = [
+  { chave: '', rotulo: 'Todos' },
+  { chave: 'motoboy', rotulo: 'Motoboys' },
+  { chave: 'lojista', rotulo: 'Lojistas' },
+  { chave: 'pessoa_fisica', rotulo: 'Pessoas' },
+]
+
+const FILTROS_SITUACAO: Segmento<'todos' | 'ativo' | 'inativo'>[] = [
+  { chave: 'todos', rotulo: 'Todos' },
+  { chave: 'ativo', rotulo: 'Ativos' },
+  { chave: 'inativo', rotulo: 'Desativados' },
+]
 
 const TIPOS: { valor: TipoContaCriavel; rotulo: string }[] = [
   { valor: 'motoboy', rotulo: 'Motoboy' },
@@ -50,21 +64,34 @@ export default function AdminUsuarios() {
   const [tipoConta, setTipoConta] = useState<TipoContaCriavel>('motoboy')
   const [criando, setCriando] = useState(false)
 
+  const [busca, setBusca] = useState('')
+  const [buscaAplicada, setBuscaAplicada] = useState('')
+  const [filtroPapel, setFiltroPapel] = useState<Papel | ''>('')
+  const [filtroSituacao, setFiltroSituacao] = useState<'todos' | 'ativo' | 'inativo'>('todos')
+
   const carregar = useCallback(
     async (deslocamento: number) => {
       if (!token) return
       setErro('')
       try {
-        const resposta = await listarUsuariosAdmin(token, { limite: LIMITE, deslocamento })
+        const resposta = await listarUsuariosAdmin(token, {
+          limite: LIMITE,
+          deslocamento,
+          busca: buscaAplicada || undefined,
+          papel: filtroPapel || undefined,
+          ativo: filtroSituacao === 'todos' ? undefined : filtroSituacao === 'ativo',
+        })
         setTotal(resposta.total)
-        setUsuarios(atuais => (deslocamento === 0 ? resposta.usuarios : [...atuais, ...resposta.usuarios]))
+        setUsuarios(atuais =>
+          deslocamento === 0 ? resposta.usuarios : [...atuais, ...resposta.usuarios],
+        )
       } catch (falha) {
         setErro(mensagemDeErro(falha))
       } finally {
         setCarregando(false)
       }
     },
-    [token],
+    [token, buscaAplicada, filtroPapel, filtroSituacao],
   )
 
   useEffect(() => {
@@ -218,6 +245,40 @@ export default function AdminUsuarios() {
           Usuários {total > 0 ? `(${total})` : ''}
         </Text>
 
+        <Campo
+          rotulo="Buscar"
+          valor={busca}
+          onChange={setBusca}
+          placeholder="Nome ou telefone"
+          autoCapitalize="none"
+        />
+        <View style={styles.filtros}>
+          <Botao
+            rotulo="Buscar"
+            tipo="secundario"
+            onPress={() => setBuscaAplicada(busca.trim())}
+          />
+          <Botao
+            rotulo="Limpar busca"
+            tipo="secundario"
+            onPress={() => {
+              setBusca('')
+              setBuscaAplicada('')
+            }}
+          />
+        </View>
+
+        <Segmentado
+          segmentos={FILTROS_PAPEL}
+          valor={filtroPapel}
+          onChange={setFiltroPapel}
+        />
+        <Segmentado
+          segmentos={FILTROS_SITUACAO}
+          valor={filtroSituacao}
+          onChange={setFiltroSituacao}
+        />
+
         {carregando ? (
           <Text style={[styles.vazioTexto, { color: cores.textoSuave }]}>Carregando…</Text>
         ) : usuarios.length === 0 ? (
@@ -251,6 +312,7 @@ export default function AdminUsuarios() {
               <Text style={[styles.itemDetalhe, { color: cores.textoSuave }]}>
                 {ROTULO_PAPEL[u.papel]}
                 {u.telefone ? ` · ${u.telefone}` : ''}
+                {u.codigo ? ` · código …${u.codigo}` : ''}
                 {u.id === usuario?.id ? ' · você' : ''}
               </Text>
               <View style={styles.itemAcoes}>
@@ -329,6 +391,11 @@ const styles = StyleSheet.create({
   mensagem: {
     fontSize: 14,
     lineHeight: 19,
+  },
+  filtros: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   item: {
     borderTopWidth: 1,

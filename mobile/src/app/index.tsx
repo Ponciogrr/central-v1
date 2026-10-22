@@ -5,13 +5,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Botao from '@/components/botao'
 import OnzeOndas from '@/components/ondas'
+import { MODO_DEMO } from '@/demo'
 import { useSessao } from '@/sessao'
 import { useTela } from '@/tela'
 import { useTema } from '@/theme'
 
 // O papel vem do servidor (sessão). Admin entra pelo painel /admin (web e app).
 const AREA_POR_PAPEL: Record<string, Href> = {
-  admin: '/admin/usuarios',
+  admin: '/admin',
   motoboy: '/motoboy',
   lojista: '/lojista',
   pessoa_fisica: '/pessoa',
@@ -62,29 +63,36 @@ export default function Entrada() {
 
           <Botao rotulo="Entrar com código de acesso" onPress={() => router.push('/login')} />
 
-          <View style={[styles.demo, { borderColor: cores.borda, backgroundColor: cores.superficie }]}>
-            <Text style={[styles.demoTitulo, { color: cores.textoSuave }]}>
-              Modo de demonstração (somente testes)
-            </Text>
-            {destinos.map(d => (
-              <Pressable
-                key={d.rota}
-                onPress={() => router.push(d.rota)}
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.botaoPerfil,
-                  {
-                    backgroundColor: cores.superficie2,
-                    borderColor: cores.borda,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <Text style={[styles.rotuloPerfil, { color: cores.texto }]}>{d.rotulo}</Text>
-                <Ionicons name="chevron-forward" size={20} color={cores.destaque} />
-              </Pressable>
-            ))}
-          </View>
+          {MODO_DEMO ? (
+            <View style={[styles.demo, { borderColor: cores.borda, backgroundColor: cores.superficie }]}>
+              <Text style={[styles.demoTitulo, { color: cores.textoSuave }]}>
+                Modo de demonstração (somente testes)
+              </Text>
+              {destinos.map(d => (
+                <Pressable
+                  key={d.rota}
+                  onPress={() => router.push(d.rota)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.botaoPerfil,
+                    {
+                      backgroundColor: cores.superficie2,
+                      borderColor: cores.borda,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.rotuloPerfil, { color: cores.texto }]}>{d.rotulo}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={cores.destaque} />
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          <Text style={[styles.rodape, { color: cores.textoSuave }]}>
+            O acesso é por código criado pelo administrador da Central de Motoboys. Não existe
+            cadastro público.
+          </Text>
 
           <Pressable
             onPress={alternar}
@@ -174,5 +182,10 @@ const styles = StyleSheet.create({
   },
   temaTexto: {
     fontSize: 12,
+  },
+  rodape: {
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 })

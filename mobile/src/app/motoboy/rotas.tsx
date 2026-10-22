@@ -4,10 +4,20 @@ import { mensagemDeErro, type DadosRota, type EncaixeMotoboyApi, type RotaApi } 
 import { BarraAviso, useAviso } from '@/components/aviso'
 import Botao from '@/components/botao'
 import Campo from '@/components/campo'
+import Segmentado, { type Segmento } from '@/components/segmentado'
+import TelaRotasDoDiaMotoboy from '@/components/tela-rotas-do-dia-motoboy'
 import Vazio from '@/components/vazio'
 import { useRotasMotoboy } from '@/rotas'
 import { useTema } from '@/theme'
 import { lerValor } from '@/valor'
+
+type Aba = 'dia' | 'minhas' | 'encaixes'
+
+const ABAS: Segmento<Aba>[] = [
+  { chave: 'dia', rotulo: 'Rotas do dia' },
+  { chave: 'minhas', rotulo: 'Minhas rotas' },
+  { chave: 'encaixes', rotulo: 'Encaixes' },
+]
 
 const ROTULO_STATUS: Record<RotaApi['status'], string> = {
   publicada: 'Publicada',
@@ -59,6 +69,7 @@ export default function RotasMotoboy() {
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [erroForm, setErroForm] = useState('')
   const [processando, setProcessando] = useState(false)
+  const [aba, setAba] = useState<Aba>('dia')
 
   // Valor de cada contraproposta em digitação (por id de encaixe).
   const [contras, setContras] = useState<Record<string, string>>({})
@@ -189,6 +200,12 @@ export default function RotasMotoboy() {
       >
       <BarraAviso aviso={aviso} aoFechar={ocultar} />
 
+      <Segmentado segmentos={ABAS} valor={aba} onChange={setAba} />
+
+      {aba === 'dia' ? <TelaRotasDoDiaMotoboy /> : null}
+
+      {aba === 'minhas' ? (
+        <>
       <Text style={[styles.intro, { color: cores.textoSuave }]}>
         Publique uma rota com destino e horários. Enquanto estiver publicada, lojistas e pessoas
         físicas podem pedir encaixes no seu caminho — com o valor proposto por eles, negociado
@@ -318,7 +335,11 @@ export default function RotasMotoboy() {
           </View>
         ))
       )}
+        </>
+      ) : null}
 
+      {aba === 'encaixes' ? (
+        <>
       <Text style={[styles.secao, { color: cores.texto }]}>Encaixes recebidos</Text>
       {pendentes.length === 0 && encaixes.length === 0 ? (
         <Vazio
@@ -425,6 +446,8 @@ export default function RotasMotoboy() {
           </View>
         ))
       )}
+        </>
+      ) : null}
 
       {erro ? <Text style={[styles.erro, { color: cores.perigo }]}>{erro}</Text> : null}
 

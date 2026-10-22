@@ -1,10 +1,11 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { mensagemDeErro, type EncaixeSolicitanteApi, type RotaApi } from '@/api/cliente'
 import { BarraAviso, useAviso } from '@/components/aviso'
 import Botao from '@/components/botao'
 import Campo from '@/components/campo'
+import { confirmar as confirmarAcao } from '@/components/confirmar'
 import Vazio from '@/components/vazio'
 import { useRotasDisponiveis } from '@/rotas'
 import { NUMEROS, useTema } from '@/theme'
@@ -29,16 +30,7 @@ function rotuloEncaixe(encaixe: EncaixeSolicitanteApi): string {
 }
 
 function confirmar(titulo: string, mensagem: string): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    const ok = typeof window !== 'undefined' ? window.confirm(`${titulo}\n\n${mensagem}`) : false
-    return Promise.resolve(ok)
-  }
-  return new Promise(resolve => {
-    Alert.alert(titulo, mensagem, [
-      { text: 'Voltar', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Confirmar', style: 'destructive', onPress: () => resolve(true) },
-    ])
-  })
+  return confirmarAcao(titulo, mensagem, { perigo: true })
 }
 
 // Tela compartilhada por lojista e pessoa física: lista as rotas publicadas que

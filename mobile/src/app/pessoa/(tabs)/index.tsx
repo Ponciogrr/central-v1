@@ -20,6 +20,11 @@ export default function InicioPessoa() {
       </View>
 
       <Botao rotulo="Solicitar entrega" onPress={() => router.push('/pessoa/solicitar')} />
+      <Botao
+        rotulo="Rotas do dia"
+        tipo="secundario"
+        onPress={() => router.push('/pessoa/rotas-do-dia')}
+      />
 
       <Text style={[styles.secao, { color: cores.texto }]}>Entregas em andamento</Text>
       <PainelEntregas situacao="ativas" />
