@@ -1,9 +1,1 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install --include=dev",
-  "includeFiles": ["dist/**"],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
-  ]
-}
+{"schema":"https://openapi.vercel.sh/vercel.json","rewrites":[{"source":"/(.*)","destination":"/api/handler"}]}
