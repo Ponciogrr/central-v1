@@ -430,3 +430,18 @@
 - **Verificações executadas antes do push:** `npm run build` (raiz, tsc + Vite) **OK**; `npm run typecheck` (backend) **OK**; `npx tsc --noEmit` (mobile) **OK**.
 - **Resultado:** commit `2352635` ("first commit") publicado na `main`; árvore remota conferida pela API = **353 entradas**; `git status` limpo e `main` acompanhando `origin/main`.
 - **Lembrete para futuros pushes:** `git push` precisa de credencial ativa. Se der `could not read Username`, refazer o login com `git credential-manager github login --browser`. O token é pessoal — nunca versionar.
+
+## Publicação na Vercel (2026-10-21)
+- **App web (PWA) no ar:** `https://central-de-motoboys-web.vercel.app` — projeto `central-de-motoboys-web` (conta Vercel `the022dark-4633`).
+- **API no ar:** `https://central-de-motoboys-api.vercel.app` — projeto `central-de-motoboys-api` (mesma conta). Já ligada ao **Neon** (o `/health` responde `"banco":{"ok":true}`).
+- **O que foi feito:**
+  - **App web** (`mobile/`): build `npx expo export --platform web` → saída `dist/`; `mobile/vercel.json` com `rewrites` `/(.*)` → `/index.html` (rotas profundas do Expo Router funcionam ao abrir o link direto). Variável `EXPO_PUBLIC_API_URL` = URL da API (valor público, embutido no bundle no build).
+  - **API** (`backend/`): função serverless. `backend/api/_entrada.ts` exporta a **mesma** aplicação Express do `npm run dev` (sem código duplicado); `backend/vercel.json` com `rewrites` `/(.*)` → `/api` (o Express recebe o caminho original — confirmado nos logs: `requestPath: /health`).
+  - **Variáveis da API na Vercel (7, todas como segredo):** `DATABASE_URL`, `DIRECT_URL`, `CODE_HMAC_KEY`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `NODE_ENV=production`, `CORS_ORIGINS` (inclui `https://central-de-motoboys-web.vercel.app`).
+  - **"Deployment Protection" (Vercel Authentication) desligada** nos dois projetos — por padrão a Vercel exigia login da conta Vercel para acessar as URLs; sem isso o app não funcionaria para o público.
+- **Problema técnico resolvido:** o construtor de funções Node da Vercel **transpila `.ts` → `.js` sem reescrever os especificadores de import**, então `import ... from '../src/app.ts'` quebrava com `ERR_MODULE_NOT_FOUND` (o arquivo em disco era `app.js`). **Solução sem mexer no código local:** `npm run build` no backend empacota a função com **esbuild** (`api/_entrada.ts` → `api/index.js`, `--packages=external` para manter `express`/`pg`/`jose` externos). O `npm run dev` local continua igual.
+- **Testes executados:**
+  - API: `/health` **200** (banco ok) · `/admin/users` sem token **401** · rota inexistente **404** · login com código errado **401** · cabeçalho `Access-Control-Allow-Origin: https://central-de-motoboys-web.vercel.app` presente.
+  - Navegador (Edge headless + CDP, contra o endereço publicado): tela de entrada renderiza ("Entrar com código de acesso"), tela de login renderiza, **login com código inexistente mostra "Código de acesso inválido."** — ou seja, o appPublished realmente conversa com a API hospedada (chamadas observadas em `https://central-de-motoboys-api.vercel.app/auth/login`); **0 falhas de rede**; único erro de console = o **401 esperado**; deep link `/admin/usuarios` redireciona para `/login` (correto, sem sessão).
+  - `npm run typecheck` (backend, agora incluindo `api/`) **OK**.
+- **Pendente:** a **integração com o GitHub não foi conectada** (o app da Vercel no GitHub não tem permissão de escrita no repositório) — as publicações são **manuais**, pelo CLI (`cd backend` ou `cd mobile` → `vercel deploy --prod`). Para publicação automática a cada `git push`, o dono precisa autorizar o app Vercel no repositório (Vercel → Settings → Git).
