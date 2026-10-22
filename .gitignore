@@ -87,3 +87,4 @@ agent/
 **/.claude/
 **/agent/
 mobile/.agents/
+mobile/skills-lock.json
